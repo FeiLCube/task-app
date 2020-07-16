@@ -3,60 +3,71 @@ class Task {
       this.id = id;
       this.title = title;
       this.priority = {};
+      this.userId = '';
     }
   }
   
+  let uid = null;
+
   class TaskListPage {
     constructor() {
       this.tasks = [];
       this.priorities = [];
-  
-      firebase.database().ref("priorities").once("value", (prioritiesSnapshot) => {
-        const allPriorities = prioritiesSnapshot.val();
-        Object.keys(allPriorities).forEach(priorityId => {
-          const priorityData = allPriorities[priorityId];
-          const priority = {
-            id: priorityId,
-            name: priorityData.name,
-            color: priorityData.color
-          };
-          this.priorities.push(priority);
-        });
-  
-        firebase.database().ref("tasks").once("value", (snapshot) => {
-          const allTasks = snapshot.val();
-          Object.keys(allTasks).forEach((taskId) => {
-            const taskData = allTasks[taskId];
-            const task = new Task(taskId, taskData.title);
-  
-            if (taskData.priorityId) {
-              const priority = this.priorities.find(priority => priority.id == taskData.priorityId);
-              task.priority = priority;
-            }
-  
-            this.tasks.push(task);
-  
-            const taskListElement = document.getElementById("taskList");
-            const row = document.createElement("tr");
-            row.setAttribute("data-task-id", task.id);
-            row.innerHTML = `
-              <td>${task.title}<span class="badge badge-success">${task.priority.name}</span></td>
-              <td>
-                <button data-action="edit" data-task-id="${task.id}" class="btn btn-primary">Edit</button>
-                <button data-action="delete" data-task-id="${task.id}" class="btn btn-danger">Delete</button>
-              </td>
-              `;
-            taskListElement.appendChild(row);
+      
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          uid = user.uid;
+          firebase.database().ref("priorities").once("value", (prioritiesSnapshot) => {
+            const allPriorities = prioritiesSnapshot.val();
+            Object.keys(allPriorities).forEach(priorityId => {
+              const priorityData = allPriorities[priorityId];
+              const priority = {
+                id: priorityId,
+                name: priorityData.name,
+                color: priorityData.color
+              };
+              taskListPage.priorities.push(priority);
+            });
+
+            firebase.database().ref("tasks").once("value", (snapshot) => {
+              const allTasks = snapshot.val();
+              Object.keys(allTasks).forEach((taskId) => {
+                const taskData = allTasks[taskId];
+                if (taskData.userId == uid) {
+                  const task = new Task(taskId, taskData.title);
+                  task.userId = uid;
+        
+                  if (taskData.priorityId) {
+                    const priority = taskListPage.priorities.find(priority => priority.id == taskData.priorityId);
+                    task.priority = priority;
+                  }
+        
+                  taskListPage.tasks.push(task);
+        
+                  const taskListElement = document.getElementById("taskList");
+                  const row = document.createElement("tr");
+                  row.setAttribute("data-task-id", task.id);
+                  row.innerHTML = `
+                    <td>${task.title}<span class="badge badge-success">${task.priority.name}</span></td>
+                    <td>
+                      <button data-action="edit" data-task-id="${task.id}" class="btn btn-primary">Edit</button>
+                      <button data-action="delete" data-task-id="${task.id}" class="btn btn-danger">Delete</button>
+                    </td>
+                    `;
+                  taskListElement.appendChild(row);
+                }
+              });
+            });
           });
-        });
-      })
-  
-  
+        } else {
+          console.log("no user signed in");
+        }
+      });
     }
   
     addTask(title) {
       const priorityElement = document.getElementById('dropdownMenuButton').innerHTML;
-
+      
       if (priorityElement === 'Task Priority') {
         document.getElementById('warningMessage').setAttribute('style', "color: red; display: block");
         return;
@@ -88,12 +99,14 @@ class Task {
       // const taskId = this.tasks.length + 1;
       const newTaskSnapshot = firebase.database().ref('tasks').push({
         title: title,
-        priorityId: priority.id
+        priorityId: priority.id,
+        userId: uid
       });
       const taskId = newTaskSnapshot.key;
   
       const task = new Task(taskId, title);
       task.priority = priority;
+      task.userId = uid;
       this.priorities.push(priority);
       this.tasks.push(task);
   
@@ -132,12 +145,12 @@ class Task {
   
       task.title = taskTitle;
   
-      firebase.database().ref('tasks').child(taskId).set(task);
+      firebase.database().ref('tasks/' + taskId + '/title').set(taskTitle);
   
       const existingRow = document.querySelector(`tr[data-task-id="${task.id}"]`);
       if (!existingRow) return;
   
-      existingRow.children[0].innerHTML = task.title;
+      existingRow.children[0].innerHTML = `${task.title}<span class="badge badge-success">${task.priority.name}</span>`;
       const taskInput = document.getElementById("task");
       taskInput.removeAttribute("data-task-id");
       taskInput.value = "";
@@ -149,7 +162,8 @@ class Task {
       const task = this.tasks.find((task) => task.id == taskId);
       if (!task) return;
   
-      firebase.database().ref('tasks').child(taskId).remove();
+      firebase.database().ref('tasks/' + taskId).remove();
+      firebase.database().ref('priorities/' + task.priority.id).remove();
   
       const existingRow = document.querySelector(`tr[data-task-id="${task.id}"]`);
       if (!existingRow) return;
@@ -180,7 +194,6 @@ class Task {
     } else if (action == "delete") {
       taskListPage.delete(taskId);
     }
-  
   });
   
   document.getElementById("highPrio").addEventListener("click", e => {
@@ -198,6 +211,9 @@ class Task {
     dropDown.innerHTML = `Low`;
   });
 
+  // Need to fix code, bug is if previous user closed app without logging out, the user
+  // is still logged in, so on the next instance of the app, even if the user enters the wrong
+  // email or password, the task-list will still load.
   document.getElementById('loginBtn').addEventListener('click', e => {
     e.preventDefault();
     const email = document.getElementById('emailInput').value;
@@ -208,12 +224,16 @@ class Task {
       document.getElementById('consoleMessage').innerHTML = `${error.message}`;
     });
 
-    document.getElementById('welcomePage').setAttribute('style', 'display:none');
-    document.getElementById('loginPage').setAttribute('style', 'display:none');
-    document.getElementById('task-app').setAttribute('style', 'display:block');
-    document.getElementById('consoleMessage').innerHTML = '';
-    document.getElementById('emailInput').value = '';
-    document.getElementById('passwordInput').value = '';
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+        document.getElementById('welcomePage').setAttribute('style', 'display:none');
+        document.getElementById('loginPage').setAttribute('style', 'display:none');
+        document.getElementById('task-app').setAttribute('style', 'display:block');
+        document.getElementById('consoleMessage').innerHTML = '';
+        document.getElementById('emailInput').value = '';
+        document.getElementById('passwordInput').value = '';
+      }
+    });
   });
 
   document.getElementById('registerBtn').addEventListener('click', e => {
@@ -237,9 +257,14 @@ class Task {
     }).catch(function(error) {
       console.log('Could not sign out', error.message);
     });
+    document.getElementById('taskList').innerHTML = '';
+    document.getElementById('task').value = '';
     document.getElementById('welcomePage').setAttribute('style', 'display:block');
     document.getElementById('loginPage').setAttribute('style', 'display:block');
     document.getElementById('task-app').setAttribute('style', 'display:none');
+    uid = null;
+    taskListPage.priorities = [];
+    taskListPage.tasks = [];
   });
 
 
