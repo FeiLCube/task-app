@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Day 5</title>
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body>
+
+    <div id='welcomePage' class ='container m2 text-center'>
+      Welcome to task list! Login or register to get started.
+    </div>
+
+    <div id='loginPage' class='container'>
+      <form>
+        <div class="form-group">
+          <label for="exampleInputEmail1">Email address</label>
+          <input type="email" class="form-control" id="emailInput" aria-describedby="emailHelp">
+        </div>
+        <div class="form-group">
+          <label for="exampleInputPassword1">Password</label>
+          <input type="password" class="form-control" id="passwordInput">
+        </div>
+        <div>
+          <small id="consoleMessage" class="form-text text-muted"></small>
+        </div>
+        <button id='loginBtn' type="submit" class="btn btn-primary">Login</button>
+        <button id='registerBtn' type="submit" class="btn btn-primary">Register</button>
+      </form>
+    </div>
+
+    <div id='task-app' class="container" style='display:none'>
+      <div class="card">
+        <div class="card-body">
+          <h5>Task List</h5>
+          <div class="form-group">
+            <div class="input-group mb-3">
+              <input
+                id="task"
+                class="form-control"
+                type="text"
+                placeholder="the task..."
+              />
+              <div class="input-group-append">
+                <button id="addBtn" type="button" class="btn btn-outline-secondary">
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Task Priority
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+              <button id='highPrio' class="dropdown-item">High</button>
+              <button id='medPrio' class="dropdown-item">Medium</button>
+              <button id='lowPrio' class="dropdown-item">Low</button>
+            </div>
+          </div>
+
+          <button id="logoutBtn" class="btn btn-danger">Logout</button>
+
+          <div id='warningMessage' style="color: red; display: none">
+            You must pick a priority for your task!
+          </div>
+        </div>
+
+        <table class="table table-sm table-bordered mt-2">
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">Tasks</th>
+              <th scope="col">Edit</th>
+            </tr>
+          </thead>
+          <tbody id="taskList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase.js"></script>
+    <!-- <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-database.js"></script> -->
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+
+    <script>
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyBN9ryjJAijCAefsyO7vCmywH_88yLKPT4",
+        authDomain: "fei-task-app.firebaseapp.com",
+        databaseURL: "https://fei-task-app.firebaseio.com",
+        projectId: "fei-task-app",
+        storageBucket: "fei-task-app.appspot.com",
+        messagingSenderId: "286293244426",
+        appId: "1:286293244426:web:b27e8016407dafd815fdf3"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <script src="app.js"></script>
+  </body>
+</html>
